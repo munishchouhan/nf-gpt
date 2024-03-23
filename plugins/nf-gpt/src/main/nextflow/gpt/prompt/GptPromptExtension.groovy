@@ -61,6 +61,8 @@ class GptPromptExtension extends PluginExtensionPoint {
         final ai = new GptPromptModel(session)
             .withModel(opts.model as String)
             .withDebug(opts.debug as Boolean)
+            .withTemperature(opts.temperature as Double)
+            .withMaxToken(opts.maxTokens as Integer)
             .build()
         // run the prompt
         final response = ai.prompt(query, opts.schema as Map)
@@ -84,6 +86,8 @@ class GptPromptExtension extends PluginExtensionPoint {
         final ai = new GptPromptModel(session)
                 .withModel(opts.model as String)
                 .withDebug(opts.debug as Boolean)
+                .withTemperature(opts.temperature as Double)
+                .withMaxToken(opts.maxTokens as Integer)
                 .build()
 
         final target = CH.createBy(source)

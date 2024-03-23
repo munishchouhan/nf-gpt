@@ -70,16 +70,16 @@ class GptPromptModel {
 
     GptPromptModel build() {
         final modelName = model ?: config.model()
-        final temp = temperature ?: config.temperature()
+        final temperature = this.temperature ?: config.temperature()
         final tokens = maxTokens ?: config.maxTokens()
-        log.debug "Creating OpenAI chat model: $modelName; api-key: ${StringUtils.redact(config.apiKey())}; temperature: $temp; maxTokens: ${maxTokens}"
+        log.debug "Creating OpenAI chat model: $modelName; api-key: ${StringUtils.redact(config.apiKey())}; temperature: $temperature; maxTokens: ${maxTokens}"
         client = OpenAiChatModel.builder()
             .apiKey(config.apiKey())
             .modelName(modelName)
             .logRequests(debug)
             .logResponses(debug)
             .temperature(temperature)
-            .maxTokens(maxTokens)
+            .maxTokens(tokens)
             .responseFormat("json_object")
             .build();
         return this
