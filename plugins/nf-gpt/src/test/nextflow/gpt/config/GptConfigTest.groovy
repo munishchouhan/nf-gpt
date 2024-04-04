@@ -29,7 +29,7 @@ class GptConfigTest extends Specification {
 
     def 'should create from session' () {
         given:
-        def CONFIG = [ai:[endpoint:'http://xyz.com', model:'gpt-4', apiKey: 'abc']]
+        def CONFIG = [gpt:[endpoint:'http://xyz.com', model:'gpt-4', apiKey: 'abc']]
         def session = Mock(Session) {getConfig()>>CONFIG  }
 
         when:

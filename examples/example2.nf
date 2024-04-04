@@ -1,9 +1,18 @@
-include { prompt } from 'plugin/nf-gpt'
+include { gptPromptForText } from 'plugin/nf-gpt'
 
-def query = '''
-Who won most gold medals in swimming and Athletics categories during Barcelona 1992 and London 2012 olympic games?"
-'''
+/*
+ * This example show how to use the `gptPromptForText` function in a process
+ */
 
-channel .of(query)
-        .prompt(schema: [athlete: 'string', numberOfMedals: 'number', location:'string', sport:'string'])
-        .view()
+process prompt {
+  input:
+    val query
+  output:
+    val response
+  exec:
+   response = gptPromptForText(query)
+}
+
+workflow {
+    prompt('Tell me a joke') | view
+}

@@ -27,6 +27,9 @@ import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.gpt.config.GptConfig
 import nextflow.util.StringUtils
+
+import static nextflow.gpt.prompt.GptHelper.*
+
 /**
  * Simple AI client for OpenAI model
  *
@@ -36,6 +39,8 @@ import nextflow.util.StringUtils
 @CompileStatic
 class GptPromptModel {
 
+    private static final String JSON_OBJECT = "json_object"
+
     private GptConfig config
     private OpenAiChatModel client
 
@@ -43,6 +48,7 @@ class GptPromptModel {
     private boolean debug
     private Double temperature
     private Integer maxTokens
+    private String responseFormat
 
     GptPromptModel(Session session) {
         this.config = GptConfig.config(session)
@@ -68,6 +74,16 @@ class GptPromptModel {
         return this
     }
 
+    GptPromptModel withResponseFormat(String format) {
+        this.responseFormat = format
+        return this
+    }
+
+    GptPromptModel withJsonResponseFormat() {
+        this.responseFormat = JSON_OBJECT
+        return this
+    }
+
     GptPromptModel build() {
         final modelName = model ?: config.model()
         final temperature = this.temperature ?: config.temperature()
@@ -80,7 +96,7 @@ class GptPromptModel {
             .logResponses(debug)
             .temperature(temperature)
             .maxTokens(tokens)
-            .responseFormat("json_object")
+            .responseFormat(responseFormat)
             .build();
         return this
     }
@@ -88,6 +104,10 @@ class GptPromptModel {
     List<Map<String,Object>> prompt(List<ChatMessage> messages, Map schema) {
         if( !messages )
             throw new IllegalArgumentException("Missing AI prompt")
+        if( !schema )
+            throw new IllegalArgumentException("Missing AI prompt schema")
+        if( responseFormat!=JSON_OBJECT )
+            throw new IllegalStateException("AI prompt requires json_object response format")
         final all = new ArrayList(messages)
         all.add(SystemMessage.from(renderSchema(schema)))
         if( debug )
@@ -105,63 +125,9 @@ class GptPromptModel {
         return prompt(List.<ChatMessage>of(msg), schema)
     }
 
-    static protected String renderSchema(Map schema) {
-        return 'You must answer strictly in the following JSON format: {"result": [' + schema0(schema) + '] }'
-    }
-
-    static protected String schema0(Object schema) {
-        if( schema instanceof List ) {
-            return "[" + (schema as List).collect(it -> schema0(it)).join(', ') + "]"
-        }
-        else if( schema instanceof Map ) {
-            return "{" + (schema as Map).collect( it -> "\"$it.key\": " + schema0(it.value) ).join(', ') + "}"
-        }
-        else if( schema instanceof CharSequence ) {
-            return "(type: $schema)"
-        }
-        else if( schema != null )
-            throw new IllegalArgumentException("Unexpected data type: ")
-        else
-            throw new IllegalArgumentException("Data structure cannot be null")
-    }
-
-    static protected List<Map<String,Object>> decodeResponse(Object response, Map schema) {
-        final result = decodeResponse0(response,schema)
-        if( !result )
-            throw new IllegalArgumentException("Response does not match expected schema: $schema - Offending value: $response")
-        return result
-    }
-
-    static protected List<Map<String,Object>> decodeResponse0(Object response, Map schema) {
-        final expected = schema.keySet()
-        if( response instanceof Map ) {
-            if( response.keySet()==expected ) {
-                return List.of(response as Map<String,Object>)
-            }
-            if( isIndexMap(response, schema) ) {
-                return new ArrayList<Map<String, Object>>(response.values() as Collection<Map<String,Object>>)
-            }
-            if( response.size()==1 ) {
-                return decodeResponse(response.values().first(), schema)
-            }
-        }
-
-        if( response instanceof List ) {
-            final it = (response as List).first()
-            if( it instanceof Map && it.keySet()==expected )
-                return response as List<Map<String,Object>>
-        }
-        return null
-    }
-
-    static protected boolean isIndexMap(Map response, Map schema) {
-        final keys = response.keySet()
-        // check all key are integers e.g. 0, 1, 2
-        if( keys.every(it-> it.toString().isInteger() ) ) {
-            // take the first and check the object matches the scherma
-            final it = response.values().first()
-            return it instanceof Map && it.keySet()==schema.keySet()
-        }
-        return false
+    String generate(List<ChatMessage> messages) {
+        if( responseFormat )
+            throw new IllegalArgumentException("Response format '$responseFormat' not support by 'generate' function")
+        return client.generate(messages).content().text()
     }
 }

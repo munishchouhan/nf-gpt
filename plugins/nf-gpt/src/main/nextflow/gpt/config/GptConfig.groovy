@@ -19,6 +19,7 @@ package nextflow.gpt.config
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import nextflow.Global
 import nextflow.Session
 import nextflow.SysEnv
 /**
@@ -39,9 +40,14 @@ class GptConfig {
     private String model
     private Double temperature
     private Integer maxTokens
+    private GptRetryOpts retryOpts
 
     static GptConfig config(Session session) {
-        new GptConfig(session.config.ai as Map ?: Collections.emptyMap(), SysEnv.get())
+        new GptConfig(session.config.gpt as Map ?: Collections.emptyMap(), SysEnv.get())
+    }
+
+    static GptConfig config() {
+        config(Global.session as Session)
     }
 
     GptConfig(Map opts, Map<String,String> env) {
@@ -49,6 +55,7 @@ class GptConfig {
         this.model = opts.model ?: DEFAULT_MODEL
         this.apiKey = opts.apiKey ?: env.get('OPENAI_API_KEY')
         this.temperature = opts.temperature!=null ? temperature as Double : DEFAULT_TEMPERATURE
+        this.retryOpts = new GptRetryOpts( opts.retryPolicy as Map ?: Map.of() )
     }
 
     String endpoint() {
@@ -69,5 +76,9 @@ class GptConfig {
 
     Integer maxTokens() {
         return maxTokens
+    }
+
+    GptRetryOpts retryOpts() {
+        return retryOpts
     }
 }

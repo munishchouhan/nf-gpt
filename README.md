@@ -14,40 +14,82 @@ export OPENAI_API_KEY=<your api key>
 2. Add the following snippet at the beginning of your script:
 
 ```nextflow
-include { prompt } from 'plugin/nf-gpt'
+include { gptPromptForText } from 'plugin/nf-gpt'
 ```
 
-3. Use the `prompt` operator to perform a ChatGPT query and collect teh result to a map object having the schema
-of your choice, e.g.
+3. Use the `gptPromptForText` operator to perform a ChatGPT prompt and get the response.
 
 ```
-include { prompt } from 'plugin/nf-gpt'
+include { gptPromptForText } from 'plugin/nf-gpt'
 
-def text = '''
-Extract information about a person from In 1968, amidst the fading echoes of Independence Day,
-a child named John arrived under the calm evening sky. This newborn, bearing the surname Doe,
-marked the start of a new journey.
-'''
+println gptPromptForText('Tell me a joke')
 
-channel
-     .of(text)
-     .prompt(schema: [firstName: 'string', lastName: 'string', birthDate: 'date (YYYY-MM-DD)'])
-     .view()
 ```
 
-4. run using nextflow as usual
+4. run using Nextflow as usual
 
 ```
 nextflow run <my script>
 ```
 
-### Other example
+5. See the folder [examples] for more examples.
 
-See the folder [examples] for more examples
 
-### Options 
+## Reference 
 
-The `prompt` operator support those options 
+### Function `gptPromptForText` 
+
+The `gptPromptForText` function carries out a Gpt chat prompt and return the corresponding message as response as a string. Example: 
+
+
+```nextflow
+println gptPromptForText('Tell me a joke')
+```
+
+
+When the option `numOfChoices` is specified the response is a list of strings.
+
+```nextflow
+def response =  gptPromptForText('Tell me a joke', numOfChoices: 3)
+for( String it : response )
+  println it
+```
+
+Available options:
+
+
+| name          | description |
+|---------------|-------------|
+| logitBias     | Accepts an obnect mapping each token (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100 |
+| model         | The AI model to be used (default: `gpt-3.5-turbo`) |
+| maxTokens     | The maximum number of tokens that can be generated in the chat completion |
+| numOfChoices  | How many chat completion choices to generate for each input message (default: 1) |
+| temperature   | What sampling temperature to use, between 0 and 2 (default: `0.7`) |
+
+
+### Function `gptPromptForData` 
+
+The `gptPromptForData` function carries out a GPT chat prompt and returns the response as a list of 
+objects having the schema speciefied. For example: 
+
+```nextflow 
+
+def query = '''
+        Extract information about a person from In 1968, amidst the fading echoes of Independence Day, 
+        a child named John arrived under the calm evening sky. This newborn, bearing the surname Doe, 
+        marked the start of a new journey.
+        '''
+
+def response = gptPromptForData(query, schema: [firstName: 'string', lastName: 'string', birthDate: 'date (YYYY-MM-DD)'])
+
+println "First name: ${response[0].firstName}"
+println "Last name: ${response[0].lastName}"
+println "Birth date: ${response[0].birthDate}"
+```
+
+
+The following options are available: 
+
 
 | name          | description |
 |---------------|-------------|
@@ -55,6 +97,7 @@ The `prompt` operator support those options
 | maxTokens     | The maximum number of tokens that can be generated in the chat completion |
 | schema        | The expected strcuture for the result object represented as map object in which represent the attribute name and the value the attribute type |
 | temperature   | What sampling temperature to use, between 0 and 2 (default: `0.7`) |
+
 
 ### Configuration file 
 
@@ -70,7 +113,7 @@ The following config options can be specified in the `nextflow.config` file:
 | gpt.temperature   | What sampling temperature to use, between 0 and 2 (default: `0.7`) |
 
 
-## Testing and debugging
+## Development 
 
 To build and test the plugin during development, configure a local Nextflow build with the following steps:
 
@@ -96,7 +139,7 @@ To build and test the plugin during development, configure a local Nextflow buil
     ./launch.sh run nextflow-io/hello -plugins nf-gpt
     ```
 
-## Testing without Nextflow build
+### Testing without Nextflow build
 
 The plugin can be tested without using a local Nextflow build using the following steps:
 
@@ -104,7 +147,7 @@ The plugin can be tested without using a local Nextflow build using the followin
 2. Copy `build/plugins/<your-plugin>` to `$HOME/.nextflow/plugins`
 3. Create a pipeline that uses your plugin and run it: `nextflow run ./my-pipeline-script.nf`
 
-## Package, upload, and publish
+### Package, upload, and publish
 
 The project should be hosted in a GitHub repository whose name matches the name of the plugin, that is the name of the directory in the `plugins` folder (e.g. `nf-gpt`).
 
